@@ -287,12 +287,13 @@ jobs:
         run: |
           TAG="${GITHUB_REF#refs/tags/}"
           mkdir -p release
-          cp artifacts/android-apk/app-release.apk "release/Flux-${TAG}-android.apk"
-          cp artifacts/android-aab/app-release.aab "release/Flux-${TAG}-android.aab"
-          cp artifacts/windows-installer/*.exe "release/" || true
-          cd artifacts/windows-portable && zip -r "../../release/Flux-${TAG}-windows-portable.zip" . && cd ../..
-          cp artifacts/linux-x64/flux-linux-x64.tar.gz "release/Flux-${TAG}-linux-x64.tar.gz"
-          cp artifacts/macos-app/flux-macos.zip "release/Flux-${TAG}-macos.zip"
+          # Fixed (non-versioned) filenames so /releases/latest/download/... URLs are stable
+          cp artifacts/android-apk/app-release.apk "release/Flux-android.apk"
+          cp artifacts/android-aab/app-release.aab "release/Flux-android.aab"
+          cp artifacts/windows-installer/*.exe "release/Flux-windows-setup.exe" || true
+          cd artifacts/windows-portable && zip -r "../../release/Flux-windows-portable.zip" . && cd ../..
+          cp artifacts/linux-x64/flux-linux-x64.tar.gz "release/Flux-linux-x64.tar.gz"
+          cp artifacts/macos-app/flux-macos.zip "release/Flux-macos.zip"
 
       - name: Create Release
         uses: softprops/action-gh-release@v2
