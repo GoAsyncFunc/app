@@ -4,10 +4,9 @@ import os
 import sys
 
 # 加密密钥
-# 注意：必须与 Dart 代码中的 _encryptionKey 保持完全一致
-# Dart: 'YOUR_ENCRYPTION_KEY_HERE_24CH' (确保完全匹配)
-# TODO: 请替换为你自己的密钥（至少 24 个字符）
-KEY = "YOUR_ENCRYPTION_KEY_HERE_24CH"
+# 优先从环境变量 ENCRYPTION_KEY 读取（用于 CI），否则使用默认占位符
+# 注意：必须与 Dart 代码中的 AppEnv.encryptionKey 保持完全一致
+KEY = os.environ.get("ENCRYPTION_KEY", "YOUR_ENCRYPTION_KEY_HERE_24CH")
 
 def encrypt(plain_text):
     """

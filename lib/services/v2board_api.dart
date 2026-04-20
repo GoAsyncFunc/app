@@ -4,6 +4,7 @@ import 'package:encrypt/encrypt.dart' as encrypt_pkg;
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'api_config.dart';
+import '../config/app_env.dart';
 import '../models/invite_data.dart';
 import '../utils/user_agent_utils.dart';
 
@@ -91,8 +92,8 @@ class V2BoardApi {
   }
 
   /// AES-128 ECB 加密密钥 (用于 sendEmailVerify 接口)
-  /// TODO: Replace with your V2Board email verify key (16 characters)
-  static const String _emailVerifyKey = 'YOUR_16CHAR_KEY!';
+  /// 通过 --dart-define=EMAIL_VERIFY_KEY=... 在编译时注入 (必须 16 字符)
+  static String get _emailVerifyKey => AppEnv.emailVerifyKey;
 
   Future<Map<String, dynamic>> sendEmailVerify(
     String email, {

@@ -7,6 +7,7 @@ import 'package:path_provider/path_provider.dart';
 import 'package:process_run/shell.dart';
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import '../config/app_env.dart';
 import '../models/server_node.dart';
 import 'doh_resolver.dart';
 import 'remote_config_service.dart';
@@ -137,7 +138,9 @@ class V2rayService {
         // ALWAYS add critical API domains to direct rules to prevent proxy loops/timeouts
         final apiDirectRule = {
           "type": "field",
-          "domain": ["domain:your-api-domain.com"], // TODO: Replace with your API domain
+          "domain": [
+            if (AppEnv.apiHost.isNotEmpty) "domain:${AppEnv.apiHost}",
+          ],
           "outboundTag": "direct",
         };
 

@@ -61,10 +61,30 @@ jobs:
           echo "$KEY_PROPERTIES" > android/key.properties
 
       - name: Build APK
-        run: flutter build apk --release
+        env:
+          API_DOMAIN: ${{ secrets.API_DOMAIN }}
+          OSS_URL: ${{ secrets.OSS_URL }}
+          ENCRYPTION_KEY: ${{ secrets.ENCRYPTION_KEY }}
+          EMAIL_VERIFY_KEY: ${{ secrets.EMAIL_VERIFY_KEY }}
+        run: |
+          flutter build apk --release \
+            --dart-define=API_DOMAIN="$API_DOMAIN" \
+            --dart-define=OSS_URL="$OSS_URL" \
+            --dart-define=ENCRYPTION_KEY="$ENCRYPTION_KEY" \
+            --dart-define=EMAIL_VERIFY_KEY="$EMAIL_VERIFY_KEY"
 
       - name: Build App Bundle
-        run: flutter build appbundle --release
+        env:
+          API_DOMAIN: ${{ secrets.API_DOMAIN }}
+          OSS_URL: ${{ secrets.OSS_URL }}
+          ENCRYPTION_KEY: ${{ secrets.ENCRYPTION_KEY }}
+          EMAIL_VERIFY_KEY: ${{ secrets.EMAIL_VERIFY_KEY }}
+        run: |
+          flutter build appbundle --release \
+            --dart-define=API_DOMAIN="$API_DOMAIN" \
+            --dart-define=OSS_URL="$OSS_URL" \
+            --dart-define=ENCRYPTION_KEY="$ENCRYPTION_KEY" \
+            --dart-define=EMAIL_VERIFY_KEY="$EMAIL_VERIFY_KEY"
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
@@ -98,7 +118,17 @@ jobs:
         run: flutter pub get
 
       - name: Build Windows
-        run: flutter build windows --release
+        env:
+          API_DOMAIN: ${{ secrets.API_DOMAIN }}
+          OSS_URL: ${{ secrets.OSS_URL }}
+          ENCRYPTION_KEY: ${{ secrets.ENCRYPTION_KEY }}
+          EMAIL_VERIFY_KEY: ${{ secrets.EMAIL_VERIFY_KEY }}
+        run: |
+          flutter build windows --release `
+            --dart-define=API_DOMAIN="$env:API_DOMAIN" `
+            --dart-define=OSS_URL="$env:OSS_URL" `
+            --dart-define=ENCRYPTION_KEY="$env:ENCRYPTION_KEY" `
+            --dart-define=EMAIL_VERIFY_KEY="$env:EMAIL_VERIFY_KEY"
 
       - name: Copy xray binaries to build output
         shell: pwsh
@@ -154,7 +184,17 @@ jobs:
         run: flutter pub get
 
       - name: Build Linux
-        run: flutter build linux --release
+        env:
+          API_DOMAIN: ${{ secrets.API_DOMAIN }}
+          OSS_URL: ${{ secrets.OSS_URL }}
+          ENCRYPTION_KEY: ${{ secrets.ENCRYPTION_KEY }}
+          EMAIL_VERIFY_KEY: ${{ secrets.EMAIL_VERIFY_KEY }}
+        run: |
+          flutter build linux --release \
+            --dart-define=API_DOMAIN="$API_DOMAIN" \
+            --dart-define=OSS_URL="$OSS_URL" \
+            --dart-define=ENCRYPTION_KEY="$ENCRYPTION_KEY" \
+            --dart-define=EMAIL_VERIFY_KEY="$EMAIL_VERIFY_KEY"
 
       - name: Package Linux bundle
         run: |
@@ -194,7 +234,17 @@ jobs:
         run: flutter pub get
 
       - name: Build macOS
-        run: flutter build macos --release
+        env:
+          API_DOMAIN: ${{ secrets.API_DOMAIN }}
+          OSS_URL: ${{ secrets.OSS_URL }}
+          ENCRYPTION_KEY: ${{ secrets.ENCRYPTION_KEY }}
+          EMAIL_VERIFY_KEY: ${{ secrets.EMAIL_VERIFY_KEY }}
+        run: |
+          flutter build macos --release \
+            --dart-define=API_DOMAIN="$API_DOMAIN" \
+            --dart-define=OSS_URL="$OSS_URL" \
+            --dart-define=ENCRYPTION_KEY="$ENCRYPTION_KEY" \
+            --dart-define=EMAIL_VERIFY_KEY="$EMAIL_VERIFY_KEY"
 
       - name: Copy xray binaries to app bundle
         run: |

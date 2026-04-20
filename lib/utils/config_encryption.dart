@@ -1,12 +1,12 @@
 import 'dart:convert';
 import 'dart:typed_data';
+import '../config/app_env.dart';
 
 /// 配置加密工具类
 /// 使用 XOR + Base64 进行简单但有效的混淆加密
 class ConfigEncryption {
-  // 加密密钥 - 请修改为您自己的密钥
-  // TODO: Replace with your own encryption key (24+ characters)
-  static const String _encryptionKey = 'YOUR_ENCRYPTION_KEY_HERE_24CH';
+  /// 加密密钥 - 通过 --dart-define=ENCRYPTION_KEY=... 在编译时注入
+  static String get _encryptionKey => AppEnv.encryptionKey;
   
   /// 加密 JSON 字符串
   static String encrypt(String plainText) {

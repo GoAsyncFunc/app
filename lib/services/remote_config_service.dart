@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
+import '../config/app_env.dart';
 import '../models/remote_config.dart';
 import '../utils/config_encryption.dart';
 import '../utils/user_agent_utils.dart';
@@ -16,14 +17,14 @@ class RemoteConfigService {
 
   /// OSS 配置文件地址列表（按优先级排序）
   /// 建议使用多个 CDN 地址作为备份
-  /// TODO: Replace with your own OSS/CDN URLs
-  static const List<String> _ossUrls = [
-    'https://your-oss-endpoint.com/release_config.json',
+  /// 通过 --dart-define=OSS_URL=... 在编译时注入
+  static final List<String> _ossUrls = [
+    if (AppEnv.ossUrl.isNotEmpty) AppEnv.ossUrl,
   ];
 
   /// 默认 API 域名（当 OSS 配置获取失败时使用）
-  /// TODO: Replace with your V2Board API domain
-  static const String _defaultDomain = 'https://your-api-domain.com';
+  /// 通过 --dart-define=API_DOMAIN=... 在编译时注入
+  static final String _defaultDomain = AppEnv.apiDomain;
 
   /// 配置缓存有效期（小时）
   static const int _cacheValidHours = 6;
