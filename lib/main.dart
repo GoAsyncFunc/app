@@ -7,6 +7,7 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:window_manager/window_manager.dart';
 
 import 'l10n/generated/app_localizations.dart';
+import 'config/app_env.dart';
 import 'screens/auth_screen.dart';
 import 'screens/root_shell.dart';
 import 'services/api_config.dart';
@@ -18,11 +19,13 @@ import 'services/v2board_api.dart';
 import 'services/v2ray_service.dart';
 import 'theme/app_theme.dart';
 import 'utils/asset_utils.dart';
+import 'utils/native_logger.dart';
 import 'widgets/flux_splash.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await _registerExitCleanup();
+  _logEnvDiagnostics();
   
   // Load persisted TUN mode state
   if (!kIsWeb && (Platform.isWindows || Platform.isLinux || Platform.isMacOS)) {
@@ -94,6 +97,27 @@ void main() async {
   }
   
   runApp(const FluxApp());
+}
+
+/// 诊断用：启动时把编译注入的环境变量状态（长度+前缀）打到 logcat
+/// `adb logcat -s FluxDiag:V` 就能看到，便于判断 GitHub Secrets 是否正确注入
+void _logEnvDiagnostics() {
+  String describe(String name, String value) {
+    final len = value.length;
+    final preview = value.isEmpty
+        ? '(empty!)'
+        : value.length <= 4
+            ? value
+            : '${value.substring(0, 4)}...';
+    return '$name: len=$len, preview=$preview';
+  }
+
+  NativeLogger.i('FluxDiag', '---- ENV DIAGNOSTICS ----');
+  NativeLogger.i('FluxDiag', describe('API_DOMAIN', AppEnv.apiDomain));
+  NativeLogger.i('FluxDiag', describe('OSS_URL', AppEnv.ossUrl));
+  NativeLogger.i('FluxDiag', describe('ENCRYPTION_KEY', AppEnv.encryptionKey));
+  NativeLogger.i('FluxDiag', describe('EMAIL_VERIFY_KEY', AppEnv.emailVerifyKey));
+  NativeLogger.i('FluxDiag', '-------------------------');
 }
 
 Future<void> _registerExitCleanup() async {
