@@ -25,13 +25,16 @@ class ConfigEncryption {
   static String decrypt(String encryptedText) {
     try {
       final keyBytes = utf8.encode(_encryptionKey);
-      final encryptedBytes = base64Decode(encryptedText);
+      // trim 掉任何 whitespace（GitHub raw / 手动编辑的文件常常末尾有 \n，
+      // Dart 严格 base64 不容忍这些字符会抛 FormatException）
+      final sanitized = encryptedText.replaceAll(RegExp(r'\s+'), '');
+      final encryptedBytes = base64Decode(sanitized);
       final decryptedBytes = Uint8List(encryptedBytes.length);
-      
+
       for (var i = 0; i < encryptedBytes.length; i++) {
         decryptedBytes[i] = encryptedBytes[i] ^ keyBytes[i % keyBytes.length];
       }
-      
+
       return utf8.decode(decryptedBytes);
     } catch (e) {
       // 如果解密失败，可能是未加密的明文，直接返回

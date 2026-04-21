@@ -112,11 +112,23 @@ void _logEnvDiagnostics() {
     return '$name: len=$len, preview=$preview';
   }
 
+  String hexDump(String s) {
+    final buf = StringBuffer();
+    for (var i = 0; i < s.length; i++) {
+      buf.write(s.codeUnitAt(i).toRadixString(16).padLeft(2, '0'));
+      if (i < s.length - 1) buf.write(' ');
+    }
+    return buf.toString();
+  }
+
   NativeLogger.i('FluxDiag', '---- ENV DIAGNOSTICS ----');
   NativeLogger.i('FluxDiag', describe('API_DOMAIN', AppEnv.apiDomain));
   NativeLogger.i('FluxDiag', describe('OSS_URL', AppEnv.ossUrl));
   NativeLogger.i('FluxDiag', describe('ENCRYPTION_KEY', AppEnv.encryptionKey));
+  // Dump full hex bytes so hidden chars (BOM, zero-width, trailing newline) become visible
+  NativeLogger.i('FluxDiag', 'ENCRYPTION_KEY hex: ${hexDump(AppEnv.encryptionKey)}');
   NativeLogger.i('FluxDiag', describe('EMAIL_VERIFY_KEY', AppEnv.emailVerifyKey));
+  NativeLogger.i('FluxDiag', 'EMAIL_VERIFY_KEY hex: ${hexDump(AppEnv.emailVerifyKey)}');
   NativeLogger.i('FluxDiag', '-------------------------');
 }
 
