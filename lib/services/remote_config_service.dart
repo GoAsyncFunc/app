@@ -387,12 +387,16 @@ class RemoteConfigService {
     _writeLogToFile(line);
   }
 
-  /// 把日志追加到 App 文档目录下 remote_config.log
-  /// 可以用 `adb pull /sdcard/Android/data/<pkg>/files/remote_config.log` 取出
-  /// （getApplicationDocumentsDirectory 对应的路径）
+  /// 把日志追加到外部存储的 remote_config.log
+  /// Android: /sdcard/Android/data/\<pkg\>/files/remote_config.log
+  /// 可以用 `adb shell cat /sdcard/Android/data/com.example.flux/files/remote_config.log` 取出
   static Future<void> _writeLogToFile(String line) async {
     try {
-      final dir = await getApplicationDocumentsDirectory();
+      // Android 使用外部存储(app-specific), 其它平台用文档目录
+      final dir = Platform.isAndroid
+          ? await getExternalStorageDirectory()
+          : await getApplicationDocumentsDirectory();
+      if (dir == null) return;
       final f = File('${dir.path}/remote_config.log');
       await f.writeAsString('$line\n',
           mode: FileMode.append, flush: false);
