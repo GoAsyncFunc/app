@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
+import 'package:path_provider/path_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../config/app_env.dart';
 import '../models/remote_config.dart';
@@ -67,6 +68,7 @@ class RemoteConfigService {
     final config = await fetchConfig();
     if (config != null && config.domains.isNotEmpty) {
       _log('Remote config fetched, domains: ${config.domains}');
+      // 3a. 先找一个测试通过的域名
       for (final domain in config.domains) {
         if (await _testDomain(domain)) {
           _log('Domain test passed: $domain');
@@ -76,12 +78,28 @@ class RemoteConfigService {
           _log('Domain test failed: $domain');
         }
       }
+      // 3b. 所有 OSS 域名测试都失败（多半是网络慢导致 timeout 假阴性），
+      //     仍然优先用 OSS 里的第一个域名，而不是盲目回落到编译时默认域名
+      final first = config.domains.first;
+      _log('All OSS domains failed probe, using first OSS domain anyway: $first');
+      _activeDomain = first;
+      return first;
     }
 
-    // 4. 所有方法都失败，使用默认域名
-    _log('All methods failed, using default: $_defaultDomain');
-    _activeDomain = _defaultDomain;
-    return _defaultDomain;
+    // 4. OSS 拉不到，才回落到编译时默认域名（先测试一下）
+    if (_defaultDomain.isNotEmpty) {
+      if (await _testDomain(_defaultDomain)) {
+        _log('Using default domain (test passed): $_defaultDomain');
+      } else {
+        _log('Default domain probe failed, using anyway: $_defaultDomain');
+      }
+      _activeDomain = _defaultDomain;
+      return _defaultDomain;
+    }
+
+    _log('No domain available at all (OSS failed + empty default)');
+    _activeDomain = '';
+    return '';
   }
 
   /// 强制刷新域名（用于域名失效时）
@@ -262,18 +280,25 @@ class RemoteConfigService {
   // ============================================
 
   Future<RemoteConfig?> _fetchFromUrl(String url) async {
+    _log('Fetching OSS config: $url');
     try {
       final response = await http
           .get(
             Uri.parse(url),
             headers: {'User-Agent': UserAgentUtils.userAgent, 'Accept': '*/*'},
           )
-          .timeout(const Duration(seconds: 10));
+          .timeout(const Duration(seconds: 15));
+      _log('OSS response: status=${response.statusCode}, bytes=${response.bodyBytes.length}');
       if (response.statusCode == 200) {
-        // 智能解密：支持加密和明文两种格式
-        final decryptedBody = ConfigEncryption.smartDecrypt(response.body);
-        final json = jsonDecode(decryptedBody) as Map<String, dynamic>;
-        return RemoteConfig.fromJson(json);
+        try {
+          final decryptedBody = ConfigEncryption.smartDecrypt(response.body);
+          final json = jsonDecode(decryptedBody) as Map<String, dynamic>;
+          final cfg = RemoteConfig.fromJson(json);
+          _log('OSS parsed OK, domains=${cfg.domains}');
+          return cfg;
+        } catch (e) {
+          _log('OSS decrypt/parse failed: $e');
+        }
       }
     } catch (e) {
       _log('Error fetching from $url: $e');
@@ -291,7 +316,7 @@ class RemoteConfigService {
             testUrl,
             headers: {'User-Agent': UserAgentUtils.userAgent, 'Accept': '*/*'},
           )
-          .timeout(const Duration(seconds: 5));
+          .timeout(const Duration(seconds: 15));
       return response.statusCode < 500;
     } catch (e) {
       _log('Domain test failed for $domain: $e');
@@ -354,8 +379,25 @@ class RemoteConfigService {
   }
 
   void _log(String message) {
+    final line =
+        '[${DateTime.now().toIso8601String()}] [RemoteConfigService] $message';
     if (kDebugMode) {
-      print('[RemoteConfigService] $message');
+      print(line);
+    }
+    _writeLogToFile(line);
+  }
+
+  /// 把日志追加到 App 文档目录下 remote_config.log
+  /// 可以用 `adb pull /sdcard/Android/data/<pkg>/files/remote_config.log` 取出
+  /// （getApplicationDocumentsDirectory 对应的路径）
+  static Future<void> _writeLogToFile(String line) async {
+    try {
+      final dir = await getApplicationDocumentsDirectory();
+      final f = File('${dir.path}/remote_config.log');
+      await f.writeAsString('$line\n',
+          mode: FileMode.append, flush: false);
+    } catch (_) {
+      // 忽略日志错误
     }
   }
 }
