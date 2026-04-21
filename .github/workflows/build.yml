@@ -67,7 +67,7 @@ jobs:
           ENCRYPTION_KEY: ${{ secrets.ENCRYPTION_KEY }}
           EMAIL_VERIFY_KEY: ${{ secrets.EMAIL_VERIFY_KEY }}
         run: |
-          flutter build apk --release \
+          flutter build apk --release --split-per-abi \
             --dart-define=API_DOMAIN="$API_DOMAIN" \
             --dart-define=OSS_URL="$OSS_URL" \
             --dart-define=ENCRYPTION_KEY="$ENCRYPTION_KEY" \
@@ -90,7 +90,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: android-apk
-          path: build/app/outputs/flutter-apk/app-release.apk
+          path: build/app/outputs/flutter-apk/app-*-release.apk
 
       - name: Upload AAB
         uses: actions/upload-artifact@v4
@@ -287,8 +287,10 @@ jobs:
         run: |
           TAG="${GITHUB_REF#refs/tags/}"
           mkdir -p release
-          # Fixed (non-versioned) filenames so /releases/latest/download/... URLs are stable
-          cp artifacts/android-apk/app-release.apk "release/Flux-android.apk"
+          # Split APKs per ABI
+          cp artifacts/android-apk/app-arm64-v8a-release.apk "release/Flux-android-arm64.apk" || true
+          cp artifacts/android-apk/app-armeabi-v7a-release.apk "release/Flux-android-arm32.apk" || true
+          cp artifacts/android-apk/app-x86_64-release.apk "release/Flux-android-x64.apk" || true
           cp artifacts/android-aab/app-release.aab "release/Flux-android.aab"
           cp artifacts/windows-installer/*.exe "release/Flux-windows-setup.exe" || true
           cd artifacts/windows-portable && zip -r "../../release/Flux-windows-portable.zip" . && cd ../..
