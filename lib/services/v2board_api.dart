@@ -45,7 +45,7 @@ class V2BoardApi {
   }
 
   Future<Map<String, dynamic>> getGuestConfig() async {
-    return _get('/guest/common/config', withAuth: false);
+    return _get('/guest/comm/config', withAuth: false);
   }
 
   Future<Map<String, dynamic>> getUserCommonConfig() async {
