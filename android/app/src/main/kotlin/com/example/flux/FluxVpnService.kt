@@ -190,9 +190,12 @@ class FluxVpnService : VpnService() {
         // v2rayNG 默认路由所有流量，除非启用 bypass LAN
         builder.addRoute("0.0.0.0", 0)
 
-        // 配置 IPv6（移动网络下更常用） - 暂时禁用以解决连接问题
-        // builder.addAddress(VPN_ADDRESS_V6, 126)
-        // builder.addRoute("::", 0)
+        // 配置 IPv6：必须接管 IPv6 流量，否则在双栈网络下（移动数据/国内 IPv6）
+        // 系统会让 IPv6 流量绕开 VPN，直连到 GFW 之外的目标会全部失败
+        // (Chrome 默认优先 IPv6，Google/Cloudflare 等都有 AAAA 记录，
+        //  不接管 IPv6 会让站点全部打不开)
+        builder.addAddress(VPN_ADDRESS_V6, 126)
+        builder.addRoute("::", 0)
 
         // 配置 DNS 服务器
         // 移动网络下优先使用国内公共 DNS，降低解析延迟
