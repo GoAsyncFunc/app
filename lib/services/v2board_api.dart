@@ -6,6 +6,7 @@ import 'package:http/http.dart' as http;
 import 'api_config.dart';
 import '../config/app_env.dart';
 import '../models/invite_data.dart';
+import '../utils/native_logger.dart';
 import '../utils/user_agent_utils.dart';
 
 class V2BoardApiException implements Exception {
@@ -267,6 +268,7 @@ class V2BoardApi {
         }
         return _handle(response, context: uri.toString());
       } catch (e) {
+        NativeLogger.e('FluxAPI', '$path FAILED: $e');
         if (retryCount < maxRetries &&
             (e is HandshakeException || e is SocketException)) {
           retryCount++;
@@ -323,6 +325,7 @@ class V2BoardApi {
         }
         return _handle(response, context: uri.toString());
       } catch (e) {
+        NativeLogger.e('FluxAPI', '$path FAILED: $e');
         if (retryCount < maxRetries &&
             (e is HandshakeException || e is SocketException)) {
           retryCount++;
@@ -451,6 +454,7 @@ class V2BoardApi {
     Map<String, String>? headers,
     Map<String, String>? body,
   }) {
+    NativeLogger.i('FluxAPI', '$method $url');
     if (!kDebugMode) return;
     // NOTE: api_key 可能包含敏感信息，如需隐藏可做屏蔽
     final safeHeaders = {...?headers};
@@ -501,6 +505,8 @@ class V2BoardApi {
   }
 
   void _logResponse(http.Response response, String url) {
+    NativeLogger.i('FluxAPI',
+        '<-- ${response.statusCode} $url body=${response.body.length}B');
     if (!kDebugMode) return;
     print('[FluxAPI] <-- ${response.statusCode} $url');
     if (response.body.isNotEmpty) {

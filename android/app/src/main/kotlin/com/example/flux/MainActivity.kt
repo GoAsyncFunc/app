@@ -21,6 +21,7 @@ import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 class MainActivity : FlutterActivity() {
     private val CHANNEL = "com.example.flux/v2ray"
     private val STATUS_CHANNEL = "com.example.flux/v2ray_status"
+    private val LOG_CHANNEL = "com.example.flux/log"
     private var isV2rayRunning = false
     private var xrayProcess: Process? = null
     // private var hysteria2Process: Process? = null // Removed
@@ -97,6 +98,24 @@ class MainActivity : FlutterActivity() {
                     vpnStatusSink = null
                 }
             })
+
+        // 纯日志通道：从 Dart 转发到 Android Log.i，方便 release 构建通过 adb logcat 排查
+        MethodChannel(flutterEngine.dartExecutor.binaryMessenger, LOG_CHANNEL).setMethodCallHandler { call, result ->
+            if (call.method == "log") {
+                val tag = call.argument<String>("tag") ?: "FluxDiag"
+                val msg = call.argument<String>("message") ?: ""
+                val level = call.argument<String>("level") ?: "i"
+                when (level) {
+                    "e" -> Log.e(tag, msg)
+                    "w" -> Log.w(tag, msg)
+                    "d" -> Log.d(tag, msg)
+                    else -> Log.i(tag, msg)
+                }
+                result.success(null)
+            } else {
+                result.notImplemented()
+            }
+        }
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {

@@ -7,6 +7,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../config/app_env.dart';
 import '../models/remote_config.dart';
 import '../utils/config_encryption.dart';
+import '../utils/native_logger.dart';
 import '../utils/user_agent_utils.dart';
 
 /// 远程配置服务
@@ -384,6 +385,7 @@ class RemoteConfigService {
     if (kDebugMode) {
       print(line);
     }
+    NativeLogger.i('FluxDiag', message);
     _writeLogToFile(line);
   }
 
