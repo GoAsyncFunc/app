@@ -38,7 +38,7 @@ class RemoteConfigService {
   static const String _configCacheKey = 'remote_config_cache';
   static const String _configVersionKey = 'remote_config_version';
   static const String _lastFetchTimeKey = 'remote_config_last_fetch';
-  static const String _activeDomainKey = 'remote_config_active_domain_v2';
+  static const String _activeDomainKey = 'remote_config_active_domain_v3';
 
   static RemoteConfig? _cachedConfig;
   static String? _activeDomain;
@@ -79,23 +79,25 @@ class RemoteConfigService {
           _log('Domain test failed: $domain');
         }
       }
-      // 3b. 所有 OSS 域名测试都失败（多半是网络慢导致 timeout 假阴性），
-      //     仍然优先用 OSS 里的第一个域名，而不是盲目回落到编译时默认域名
-      final first = config.domains.first;
-      _log('All OSS domains failed probe, using first OSS domain anyway: $first');
-      _activeDomain = first;
-      return first;
+      _log('All OSS domains failed probe, trying default domain fallback');
     }
 
-    // 4. OSS 拉不到，才回落到编译时默认域名（先测试一下）
+    // 4. OSS 拉不到或 OSS 域名不可达时，回落到编译时默认域名
     if (_defaultDomain.isNotEmpty) {
       if (await _testDomain(_defaultDomain)) {
         _log('Using default domain (test passed): $_defaultDomain');
       } else {
         _log('Default domain probe failed, using anyway: $_defaultDomain');
       }
-      _activeDomain = _defaultDomain;
+      await _setActiveDomain(_defaultDomain);
       return _defaultDomain;
+    }
+
+    if (config != null && config.domains.isNotEmpty) {
+      final first = config.domains.first;
+      _log('No default domain available, using first OSS domain anyway: $first');
+      _activeDomain = first;
+      return first;
     }
 
     _log('No domain available at all (OSS failed + empty default)');
