@@ -196,6 +196,61 @@ class ServerNode {
     }
   }
 
+  /// 从 AnyTLS 链接解析（仅用于显示，连接需 sing-box/mihomo 支持）
+  static ServerNode? fromAnyTls(String link) {
+    try {
+      if (!link.startsWith('anytls://')) return null;
+
+      final uri = Uri.parse(link);
+      final query = uri.queryParameters;
+      final password = uri.userInfo;
+      String address = uri.host;
+      int finalPort = uri.port;
+
+      if (address.isEmpty) {
+        final noScheme = link.substring(link.indexOf('://') + 3);
+        final atIndex = noScheme.lastIndexOf('@');
+        if (atIndex != -1) {
+          final hostPortPart = noScheme
+              .substring(atIndex + 1)
+              .split('/')[0]
+              .split('?')[0]
+              .split('#')[0];
+          final hostPort = hostPortPart.split(':');
+          address = hostPort[0];
+          if (hostPort.length > 1) {
+            finalPort = int.tryParse(hostPort[1]) ?? finalPort;
+          }
+        }
+      }
+
+      final sni = query['sni'] ?? query['peer'] ?? query['host'];
+      final insecure = _parseBool(query['insecure'] ?? query['allowInsecure']);
+      final fp = query['fp'];
+
+      return ServerNode(
+        name: uri.fragment.isNotEmpty
+            ? Uri.decodeComponent(uri.fragment)
+            : 'AnyTLS',
+        address: address,
+        port: finalPort,
+        protocol: 'anytls',
+        uuid: password,
+        network: query['type'] ?? 'tcp',
+        rawConfig: {
+          'password': password,
+          'server': address,
+          'port': finalPort,
+          if (sni != null) 'sni': sni,
+          if (insecure == true) 'insecure': true,
+          if (fp != null) 'fp': fp,
+        },
+      );
+    } catch (_) {
+      return null;
+    }
+  }
+
   /// 从VLESS链接解析
   static ServerNode? fromVless(String vlessLink) {
     try {
@@ -600,6 +655,33 @@ class ServerNode {
         },
       };
       return outbound;
+    } else if (protocol == 'anytls') {
+      // AnyTLS Protocol (Xray fork PR #5907 format)
+      final sni = rawConfig?['sni'] as String?;
+      final insecure = rawConfig?['insecure'] == true ||
+          rawConfig?['allowInsecure'] == true;
+      final fp = rawConfig?['fp'] as String?;
+      final outbound = <String, dynamic>{
+        'protocol': 'anytls',
+        'settings': {
+          'address': address.trim(),
+          'port': port,
+          'password': uuid ?? '',
+          'idleSessionCheckInterval': 30,
+          'idleSessionTimeout': 60,
+          'minIdleSession': 0,
+        },
+        'streamSettings': {
+          'network': network ?? 'tcp',
+          'security': 'tls',
+          'tlsSettings': {
+            'serverName': sni ?? address.trim(),
+            'allowInsecure': insecure,
+            if (fp != null) 'fingerprint': fp,
+          },
+        },
+      };
+      return outbound;
     }
     // 不支持的协议
     return {};
@@ -905,6 +987,8 @@ class ServerNode {
         node = fromShadowsocks(line);
       } else if (line.startsWith('trojan://')) {
         node = fromTrojan(line);
+      } else if (line.startsWith('anytls://')) {
+        node = fromAnyTls(line);
       } else if (line.startsWith('tuic://')) {
         node = fromTuic(line);
       } else if (line.startsWith('wg://') || line.startsWith('wireguard://')) {
@@ -920,12 +1004,13 @@ class ServerNode {
   }
   
   static bool _isUrl(String s) {
-    return s.startsWith('hysteria2://') || 
+    return s.startsWith('hysteria2://') ||
            s.startsWith('hy2://') ||
            s.startsWith('vless://') ||
            s.startsWith('vmess://') ||
            s.startsWith('ss://') ||
-           s.startsWith('trojan://') || 
+           s.startsWith('trojan://') ||
+           s.startsWith('anytls://') ||
            s.startsWith('tuic://') ||
            s.startsWith('wg://') ||
            s.startsWith('wireguard://');
